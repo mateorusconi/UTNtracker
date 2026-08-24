@@ -2,7 +2,14 @@
 
 /** Panel de estadísticas (§4.4). Es lo que se ve cuando no hay nada seleccionado. */
 
-import { CircleCheck, CircleDashed, Hourglass, PencilLine, type LucideIcon } from 'lucide-react';
+import {
+  CalendarClock,
+  CircleCheck,
+  CircleDashed,
+  Hourglass,
+  PencilLine,
+  type LucideIcon,
+} from 'lucide-react';
 import { useMemo } from 'react';
 
 import {
@@ -131,7 +138,21 @@ export function PanelEstadisticas() {
         </p>
       </div>
 
-      <div className="p-4">
+      <div className="space-y-2 p-4">
+        {stats.regulares > 0 && (
+          <button
+            type="button"
+            onClick={() => usarMapa.getState().setFinalesAbiertos(true)}
+            className="flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-sm transition hover:bg-black/5 dark:hover:bg-white/5"
+            style={{ borderColor: 'var(--border)' }}
+          >
+            <CalendarClock className="size-4 shrink-0 text-orange-500" />
+            <span>Próximos finales</span>
+            <span className="ml-auto text-[11px] text-zinc-500 tabular-nums dark:text-zinc-400">
+              {stats.finalesHabilitados} de {stats.regulares}
+            </span>
+          </button>
+        )}
         <button
           type="button"
           onClick={() => usarMapa.getState().setElectivasAbiertas(true)}

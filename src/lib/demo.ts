@@ -33,7 +33,10 @@ export const PROGRESO_DEMO: Progreso = progresoDesde({
   'isi-13': 'regular',
   'isi-14': 'aprobada',
   'isi-15': 'cursando',
-  'isi-16': 'regular',
+  // Aprobada y no regular a propósito: así el final de Sintaxis (13) queda como
+  // el único que le falta a Bases de Datos (19), y la vista de próximos finales
+  // tiene un "empezá por este" que mostrar.
+  'isi-16': 'aprobada',
 
   // Tercero: Bases de Datos regular pero con 13 y 16 sin final →
   // "Falta final correlativo".

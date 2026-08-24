@@ -9,7 +9,15 @@
  * del README.
  */
 
-import { BarChart3, Download, Home, Network, Search, type LucideIcon } from 'lucide-react';
+import {
+  BarChart3,
+  CalendarClock,
+  Download,
+  Home,
+  Network,
+  Search,
+  type LucideIcon,
+} from 'lucide-react';
 
 import { cx } from '../../lib/theme';
 import { usarMapa } from '../../store/usar-mapa';
@@ -37,6 +45,11 @@ export function Rail() {
     [
       { icono: Search, etiqueta: 'Buscar materia', fase: 4 },
       { icono: Network, etiqueta: 'Mapa', activo: true },
+      {
+        icono: CalendarClock,
+        etiqueta: 'Próximos finales',
+        onClick: () => usarMapa.getState().setFinalesAbiertos(true),
+      },
       {
         icono: BarChart3,
         etiqueta: 'Estadísticas',

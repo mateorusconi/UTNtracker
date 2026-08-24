@@ -5,7 +5,7 @@ de la **UTN Facultad Regional Tucumán**. El estudiante marca su avance y ve en 
 materias se le desbloquean, qué finales tiene habilitados y cuánto le falta para el título
 intermedio de Analista.
 
-> **Estado: Fase 3 terminada.** El tracker funciona de punta a punta: marcás materias con el
+> **Estado: Fase 3 terminada + próximos finales.** El tracker funciona de punta a punta: marcás materias con el
 > clic derecho, el grafo se recalcula, el avance se guarda en `localStorage` y los paneles de
 > estadísticas y de selección están completos.
 
@@ -38,7 +38,7 @@ mismas electivas para los dos planes.
 npm run dev         # http://localhost:3000
 npm run build       # export estático a out/
 npm run validar     # valida el dataset contra las ordenanzas (15 reglas)
-npm test            # 71 tests de Vitest
+npm test            # 91 tests de Vitest
 npm run typecheck   # tsc --noEmit, strict, sin any
 npm run check       # typecheck + validar + test
 ```
@@ -66,7 +66,8 @@ UtnFRTracker/
 │   ├── correlativas.test.ts             ✔  criterios de aceptación del §6
 │   ├── reglas-especiales.test.ts        ✔  PF, PPS, Seminario, electivas
 │   ├── layout.test.ts                   ✔  posiciones determinísticas
-│   └── seleccion.test.ts                ✔  subgrafo resaltado
+│   ├── seleccion.test.ts                ✔  subgrafo resaltado
+│   └── mesas.test.ts                    ✔  calendario y prioridad de finales
 │
 ├── public/
 │   ├── manifest.json                    ·  Fase 5
@@ -74,7 +75,8 @@ UtnFRTracker/
 │
 └── src/
     ├── data/
-    │   └── plan-utn-frt-isi-2023.ts     ✔  DATASET SAGRADO — no se inventa nada acá
+    │   ├── plan-utn-frt-isi-2023.ts     ✔  DATASET SAGRADO — no se inventa nada acá
+    │   └── mesas-2026.ts                ✔  calendario oficial de mesas
     │
     ├── lib/
     │   ├── tipos.ts                     ✔  Progreso / RegistroProgreso
@@ -83,6 +85,7 @@ UtnFRTracker/
     │   ├── layout.ts                    ✔  x = (nivel-1) × (ANCHO + GAP)
     │   ├── etiquetas.ts                 ✔  la línea meta de la tarjeta
     │   ├── theme.ts                     ✔  ACENTO y los 7 estados visuales
+    │   ├── mesas.ts                     ✔  contador de mesas y prioridad de finales
     │   └── demo.ts                      ✔  andamio: avance falso para ver los 7 estados
     │
     ├── store/
@@ -113,7 +116,8 @@ UtnFRTracker/
             ├── anillo.tsx               ✔  donut SVG de progreso
             ├── estadisticas.tsx         ✔  anillos y contadores
             ├── seleccion.tsx            ✔  MATERIA PRIORITARIA y requisitos
-            └── electivas.tsx            ✔  catálogo de las 21 y horas por nivel
+            ├── electivas.tsx            ✔  catálogo de las 21 y horas por nivel
+            └── finales.tsx              ✔  próximas mesas y qué final priorizar
 ```
 
 ---
@@ -326,6 +330,45 @@ selección de cualquier materia, y en el `title` de las tarjetas del mapa.
 **No va en la cara de las tarjetas del mapa** a propósito: en el Plan 2023 las 36 obligatorias son
 todas anuales, así que serían 38 tarjetas repitiendo "Anual" en una línea meta que ya carga el N°
 y el sufijo contextual.
+
+---
+
+## Próximos finales (`src/lib/mesas.ts`)
+
+Cruza el calendario oficial de mesas con el avance cargado para responder dos preguntas: **cuándo
+es la próxima mesa** y **qué final conviene rendir**. Se abre desde el rail o desde el panel de
+estadísticas.
+
+`src/data/mesas-2026.ts` transcribe el calendario de la Secretaría de Asuntos Estudiantiles: diez
+llamados de tres mesas. Dos detalles que el código respeta y que es fácil pasar por alto:
+
+- El **8°, 9° y 10° llamado son del ciclo 2026 pero se rinden en 2027**. Las fechas van con año
+  explícito; guardadas como día/mes, el contador daría negativo justo cuando más se necesita.
+- Las inscripciones cierran **a las 15:00**, no a medianoche. A las 14:59 del día de cierre
+  todavía se puede anotar; a las 15:01 la mesa sigue por rendirse pero ya no admite inscripción.
+
+Las fechas se parsean a **medianoche local**, nunca con `new Date(iso)`: eso parsea como UTC y en
+Argentina devuelve el día anterior a las 21:00, corriendo todos los contadores un día.
+
+### Cómo se prioriza
+
+Para cada materia en estado `regular`, se simula aprobar **solo ese final** y se mide qué cambia:
+cuántas materias bloqueadas pasan a disponibles y cuántos otros finales se destraban.
+
+El impacto se calcula **sin cascada**, a diferencia de `desbloqueaEnCadena`. Es la diferencia
+entre *"rendí esto y la semana que viene te anotás a tres materias más"* y una promesa que en
+realidad depende de otros cinco finales.
+
+El orden es: primero lo que se puede rendir ya, después por impacto, y a igualdad por orden de
+plan. Una materia que no podés rendir nunca va arriba de una que sí, por mucho que destrabe — la
+lista tiene que ser accionable.
+
+### Lo que todavía no hace
+
+**No dice en qué mesa cae cada materia.** La única distribución que circula viene de un centro de
+estudiantes y está escrita con nombres del **Plan 2008** (Gestión de Datos, Matemática Discreta,
+Sistemas y Organizaciones…), así que traducirla al 2023 sería inventar. El diálogo lo avisa en el
+pie en vez de simularlo.
 
 ---
 

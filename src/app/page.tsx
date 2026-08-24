@@ -8,6 +8,7 @@ import { Rail } from '../components/layout/rail';
 import { Topbar } from '../components/layout/topbar';
 import { Canvas } from '../components/mapa/canvas';
 import { DialogoElectivas } from '../components/paneles/electivas';
+import { DialogoFinales } from '../components/paneles/finales';
 import { PanelLateral } from '../components/paneles/panel-lateral';
 import { ProveedorTema, useTema } from '../components/tema';
 import { usarMapa } from '../store/usar-mapa';
@@ -45,6 +46,7 @@ export default function Page() {
 
       <InfoDialog abierto={info} alCerrar={() => setInfo(false)} />
       <DialogoElectivas />
+      <DialogoFinales />
       <Avisos />
     </ProveedorTema>
   );

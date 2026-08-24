@@ -24,6 +24,8 @@ interface EstadoMapa {
   railAbierto: boolean;
   /** Diálogo del catálogo de electivas. */
   electivasAbiertas: boolean;
+  /** Diálogo de próximos finales y mesas. */
+  finalesAbiertos: boolean;
 
   seleccionar: (slug: string | null) => void;
   alternarCapa: (capa: keyof CapasVisibles) => void;
@@ -31,6 +33,7 @@ interface EstadoMapa {
   alternarPanel: () => void;
   alternarRail: () => void;
   setElectivasAbiertas: (abiertas: boolean) => void;
+  setFinalesAbiertos: (abiertos: boolean) => void;
 }
 
 export const usarMapa = create<EstadoMapa>()((set) => ({
@@ -39,6 +42,7 @@ export const usarMapa = create<EstadoMapa>()((set) => ({
   panelAbierto: true,
   railAbierto: true,
   electivasAbiertas: false,
+  finalesAbiertos: false,
 
   seleccionar: (slug) =>
     set((estado) => ({
@@ -52,4 +56,5 @@ export const usarMapa = create<EstadoMapa>()((set) => ({
   alternarPanel: () => set((estado) => ({ panelAbierto: !estado.panelAbierto })),
   alternarRail: () => set((estado) => ({ railAbierto: !estado.railAbierto })),
   setElectivasAbiertas: (electivasAbiertas) => set({ electivasAbiertas }),
+  setFinalesAbiertos: (finalesAbiertos) => set({ finalesAbiertos }),
 }));
