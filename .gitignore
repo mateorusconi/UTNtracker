@@ -1,0 +1,33 @@
+# dependencias
+node_modules/
+.pnp
+.pnp.js
+
+# build
+.next/
+out/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# config local de Claude Code (el launch.json sí se versiona)
+.claude/settings.local.json
+
+# entorno
+.env
+.env.local
+.env.*.local
+
+# editores / SO
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# tests
+coverage/
+
+# varios
+*.log
+npm-debug.log*

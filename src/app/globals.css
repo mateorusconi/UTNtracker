@@ -1,0 +1,172 @@
+@import 'tailwindcss';
+
+/* Las clases viven en archivos .ts/.tsx de src/ (theme.ts, componentes). */
+@source '../';
+
+/* Dark mode por clase, no por preferencia del sistema (§1 del prompt). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ───────────────────────────────────────────────────────────────────────────
+   TOKENS
+   Nombres compatibles con shadcn/ui para que `npx shadcn add` entre sin
+   retoques en la Fase 3. Los colores de los ESTADOS de materia no viven acá:
+   están en src/lib/theme.ts.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --background: #ffffff;
+  --foreground: #18181b; /* zinc-900 */
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #f97316; /* acento: naranja (orange-500) */
+  --primary-foreground: #1c1917;
+  --secondary: #f4f4f5; /* zinc-100 */
+  --secondary-foreground: #27272a;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a; /* zinc-500 */
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --border: rgb(0 0 0 / 0.1);
+  --input: rgb(0 0 0 / 0.12);
+  --ring: #f97316;
+  --radius: 0.75rem;
+
+  /* Superficies propias del mapa. */
+  --lienzo: #f7f7f8;
+  --puntos: rgb(0 0 0 / 0.16);
+  --panel: rgb(255 255 255 / 0.82);
+  --columna: rgb(0 0 0 / 0.02);
+  --columna-borde: rgb(0 0 0 / 0.09);
+  --barra: #ffffff;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #f4f4f5; /* zinc-100 */
+  --card: #111113;
+  --card-foreground: #f4f4f5;
+  --popover: #111113;
+  --popover-foreground: #f4f4f5;
+  --primary: #f97316;
+  --primary-foreground: #1c1917;
+  --secondary: #1c1c1f;
+  --secondary-foreground: #e4e4e7;
+  --muted: #1c1c1f;
+  --muted-foreground: #a1a1aa; /* zinc-400 */
+  --border: rgb(255 255 255 / 0.08);
+  --input: rgb(255 255 255 / 0.1);
+  --ring: #f97316;
+
+  /* El lienzo va MÁS CLARO que la barra y el rail: así el mapa se lee como la
+     superficie de trabajo y el chrome se hunde. Es lo que hace la referencia
+     (lienzo #141414 sobre chrome más oscuro). */
+  --lienzo: #141315;
+  --puntos: rgb(255 255 255 / 0.16);
+  --panel: rgb(24 23 26 / 0.82);
+  --columna: rgb(255 255 255 / 0.02);
+  --columna-borde: rgb(255 255 255 / 0.08);
+  --barra: #0c0b0d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-lienzo: var(--lienzo);
+  --color-panel: var(--panel);
+  --color-barra: var(--barra);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   BASE
+   ─────────────────────────────────────────────────────────────────────────── */
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   REACT FLOW
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.react-flow {
+  background-color: var(--lienzo);
+}
+
+/* Handles de 6 px con borde del color del lienzo, como la referencia: se leen
+   como un puntito prolijo donde nace la arista, no como un pixel perdido. */
+.react-flow__handle {
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  min-height: 6px;
+  border: 1px solid var(--lienzo);
+  border-radius: 100%;
+  background: var(--muted-foreground);
+  opacity: 0.65;
+}
+
+.react-flow__node {
+  cursor: pointer;
+}
+
+/* El anillo de foco propio de React Flow pelea con nuestro estilo de
+   selección, que es un outline punteado en el color de acento. */
+.react-flow__node.selected {
+  outline: none;
+}
+
+/* Las aristas del subgrafo resaltado "fluyen" hacia la materia seleccionada. */
+@keyframes trackea-fluir {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.arista-resaltada {
+  animation: trackea-fluir 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arista-resaltada {
+    animation: none;
+  }
+}
+
+.react-flow__attribution {
+  background: transparent;
+  font-size: 10px;
+}
+
+.react-flow__attribution a {
+  color: var(--muted-foreground);
+  opacity: 0.5;
+}
