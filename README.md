@@ -9,6 +9,30 @@ intermedio de Analista.
 > clic derecho, el grafo se recalcula, el avance se guarda en `localStorage` y los paneles de
 > estadísticas y de selección están completos.
 
+**En vivo: [mateorusconi.github.io/UTNtracker](https://mateorusconi.github.io/UTNtracker/)**
+
+---
+
+## Deploy
+
+GitHub Pages, con el workflow de [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+Cada push a `main` valida, buildea y publica.
+
+El paso de validación corre `npm run check` **antes** de publicar: un dato académico mal cargado
+es peor que la página caída.
+
+Tres detalles que hacen falta para que Pages sirva un export de Next:
+
+- El sitio vive en `/UTNtracker`, no en la raíz del dominio, así que el `basePath` entra por la
+  variable `PAGES_BASE_PATH`. En `npm run dev` queda vacía y todo corre en `/`.
+- `trailingSlash: true`, para que cada ruta se emita como `carpeta/index.html`. Sin eso Pages
+  responde 404 al entrar directo a cualquier URL que no sea la raíz.
+- `.nojekyll` en `out/`, porque Jekyll ignora las carpetas que empiezan con guion bajo y se
+  llevaría puesto todo `_next/`.
+
+El avance vive en el `localStorage` de cada navegador: no hay cuentas ni servidor, así que cada
+uno ve solo lo suyo y nada viaja a ningún lado.
+
 ---
 
 ## Alcance
