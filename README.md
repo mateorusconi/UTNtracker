@@ -37,8 +37,8 @@ mismas electivas para los dos planes.
 ```bash
 npm run dev         # http://localhost:3000
 npm run build       # export estático a out/
-npm run validar     # valida el dataset contra las ordenanzas (15 reglas)
-npm test            # 91 tests de Vitest
+npm run validar     # valida el dataset contra las ordenanzas (16 reglas)
+npm test            # 98 tests de Vitest
 npm run typecheck   # tsc --noEmit, strict, sin any
 npm run check       # typecheck + validar + test
 ```
@@ -363,12 +363,30 @@ El orden es: primero lo que se puede rendir ya, después por impacto, y a iguald
 plan. Una materia que no podés rendir nunca va arriba de una que sí, por mucho que destrabe — la
 lista tiene que ser accionable.
 
-### Lo que todavía no hace
+### En qué mesa se rinde cada materia — leer antes de confiar
 
-**No dice en qué mesa cae cada materia.** La única distribución que circula viene de un centro de
-estudiantes y está escrita con nombres del **Plan 2008** (Gestión de Datos, Matemática Discreta,
-Sistemas y Organizaciones…), así que traducirla al 2023 sería inventar. El diálogo lo avisa en el
-pie en vez de simularlo.
+`src/data/mesas-materias.ts` dice en qué mesa cae cada materia, pero **el dato es frágil y hay que
+tratarlo como tal**.
+
+Se verificó que ni la página de Diseño Curricular ni la de Horarios publican esta información. La
+única distribución que circula es el calendario de un **centro de estudiantes** (Alternativa
+Tecnológica), escrito con nombres del **Plan 2008**: Gestión de Datos, Matemática Discreta,
+Sistemas y Organizaciones, Modelos Numéricos.
+
+Por eso cada asignación lleva su nivel de confianza:
+
+| | Cuántas | Cómo se muestra |
+|---|---|---|
+| `exacta` | 17 | El nombre coincide con el del Plan 2023 |
+| `interpretada` | 19 | Leímos el nombre del 2008 como su equivalente. Se muestra con ⚠ |
+| sin entrada | 5 | Dice "mesa no publicada" en vez de inventar una |
+
+Las cinco sin mesa son Desarrollo de Software (20), Ingeniería y Calidad de Software (25), Ciencia
+de Datos (32), Seguridad en los SI (35) y el Seminario Integrador (100): no figuran en el listado.
+
+**El riesgo de fondo**, que la app no puede resolver sola: si esa distribución está definida para
+el Plan 2008, puede que directamente **no aplique** al 2023 y que la facultad maneje otra sin
+publicar. Confirmá siempre antes de anotarte.
 
 ---
 

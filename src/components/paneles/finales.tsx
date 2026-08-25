@@ -8,9 +8,10 @@
  *  Dos preguntas en una pantalla: **cuándo es la próxima mesa** y **qué final
  *  conviene rendir**.
  *
- *  Lo que todavía NO hace: decir en qué mesa cae cada materia. La distribución
- *  que circula está en nombres del Plan 2008 y traducirla sería inventar. Se
- *  avisa en el pie del diálogo en vez de simularlo.
+ *  La mesa de cada materia sale de `data/mesas-materias.ts`, que es una lectura
+ *  del listado de un centro de estudiantes escrito en nombres del Plan 2008.
+ *  Las asignaciones interpretadas se muestran con ⚠ y las que no figuran dicen
+ *  "mesa no publicada": lo que no sabemos, no se dibuja como si lo supiéramos.
  * ============================================================================
  */
 
@@ -71,7 +72,10 @@ export function DialogoFinales() {
     if (!abierto && dialogo.open) dialogo.close();
   }, [abierto]);
 
-  const resumen = useMemo(() => resumenDeFinales(progreso, grafo), [progreso, grafo]);
+  const resumen = useMemo(
+    () => resumenDeFinales(progreso, grafo, ahora ?? undefined),
+    [progreso, grafo, ahora],
+  );
   const llamados = useMemo(
     () => (ahora === null ? [] : llamadosPendientes(ahora).slice(0, 3)),
     [ahora],
@@ -84,7 +88,7 @@ export function DialogoFinales() {
     <dialog
       ref={ref}
       onClose={cerrar}
-      className="m-auto flex max-h-[85vh] w-[min(52rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border p-0 backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+      className="m-auto hidden max-h-[85vh] open:flex w-[min(52rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border p-0 backdrop:bg-black/60 backdrop:backdrop-blur-sm"
       style={{
         background: 'var(--popover)',
         borderColor: 'var(--border)',
@@ -162,7 +166,19 @@ export function DialogoFinales() {
                 </p>
                 <p className="mt-1 text-xs text-orange-700/90 dark:text-orange-300/90">
                   <strong>{resumen.prioritario.materia.nombre}</strong> es el que más te destraba:{' '}
-                  {describirImpacto(resumen.prioritario)}.
+                  {describirImpacto(resumen.prioritario)}.{' '}
+                  {resumen.prioritario.oportunidad !== null && (
+                    <>
+                      Se rinde en la <strong>Mesa {ROMANOS[resumen.prioritario.oportunidad.mesa.mesa]}</strong>{' '}
+                      del {resumen.prioritario.oportunidad.mesa.llamado}° llamado:{' '}
+                      {resumen.prioritario.oportunidad.diasParaEstudiar === 0
+                        ? 'es hoy'
+                        : `te quedan ${resumen.prioritario.oportunidad.diasParaEstudiar} días para estudiar`}
+                      {resumen.prioritario.oportunidad.inscripcionAbierta
+                        ? `, y la inscripción cierra ${enDias(resumen.prioritario.oportunidad.diasParaAnotarse)}.`
+                        : ', pero la inscripción ya cerró.'}
+                    </>
+                  )}
                 </p>
               </div>
             )}
@@ -196,9 +212,9 @@ export function DialogoFinales() {
         <p className="mt-5 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
           <TriangleAlert className="mt-px size-3.5 shrink-0" />
           <span>
-            Todavía no sabemos <strong>en qué mesa</strong> cae cada materia: la única distribución
-            que circula está escrita con nombres del Plan 2008. Confirmá la mesa en el Departamento
-            antes de anotarte.
+            La distribución por mesa <strong>no la publica el Departamento</strong>: sale del
+            calendario de un centro de estudiantes, escrito con nombres del Plan 2008. Las mesas
+            marcadas con ⚠ son lectura nuestra de ese listado. Confirmá siempre antes de anotarte.
           </span>
         </p>
       </div>
@@ -301,6 +317,9 @@ function FilaFinal({ final }: { final: FinalPendiente }) {
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm leading-tight font-medium">{final.materia.nombre}</span>
+
+          {final.puedeRendir && <LineaMesa final={final} />}
+
           {final.puedeRendir ? (
             impacto !== '' && (
               <span className="mt-0.5 block text-[11px] text-zinc-500 dark:text-zinc-400">
@@ -317,6 +336,63 @@ function FilaFinal({ final }: { final: FinalPendiente }) {
         <ChevronRight className="mt-0.5 size-4 shrink-0 opacity-40" />
       </button>
     </li>
+  );
+}
+
+/**
+ * Mesa, fecha y cuenta regresiva. Cuando la asignación a mesa es una lectura
+ * nuestra del listado del Plan 2008 lo dice con un ⚠: la diferencia entre
+ * "sabemos" y "creemos" acá se paga faltando a un examen.
+ */
+function LineaMesa({ final }: { final: FinalPendiente }) {
+  const o = final.oportunidad;
+
+  if (o === null) {
+    return (
+      <span className="mt-1 block text-[11px] text-zinc-500 dark:text-zinc-500">
+        Mesa no publicada para esta materia
+      </span>
+    );
+  }
+
+  const interpretada = o.asignacion.confianza === 'interpretada';
+
+  return (
+    <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+      <span
+        className={cx(
+          'inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-medium',
+          interpretada
+            ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+            : 'bg-orange-500/15 text-orange-700 dark:text-orange-400',
+        )}
+        title={
+          interpretada
+            ? `El listado dice «${o.asignacion.comoFigura}» (Plan 2008). Lo leímos como esta materia — confirmalo en el Departamento.`
+            : `Figura como «${o.asignacion.comoFigura}»`
+        }
+      >
+        {interpretada && <TriangleAlert className="size-3" />}
+        Mesa {ROMANOS[o.mesa.mesa]}
+      </span>
+      <span className="text-zinc-500 dark:text-zinc-400">
+        {o.mesa.llamado}° llamado · examen {ddmm(o.mesa.examen)} ·{' '}
+        {o.diasParaEstudiar === 0
+          ? 'es hoy'
+          : `${o.diasParaEstudiar} días para estudiar`}
+      </span>
+      <span
+        className={
+          o.inscripcionAbierta
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : 'text-zinc-500 dark:text-zinc-500'
+        }
+      >
+        {o.inscripcionAbierta
+          ? `inscripción cierra ${enDias(o.diasParaAnotarse)}`
+          : 'inscripción cerrada'}
+      </span>
+    </span>
   );
 }
 

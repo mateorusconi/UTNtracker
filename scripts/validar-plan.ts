@@ -13,6 +13,7 @@
  */
 
 import PLAN, { type Materia } from '../src/data/plan-utn-frt-isi-2023';
+import { ASIGNACIONES, SIN_MESA_PUBLICADA } from '../src/data/mesas-materias';
 import {
   ASIGNATURAS_OBLIGATORIAS_ESPERADAS,
   HORAS_OBLIGATORIAS_ESPERADAS,
@@ -265,6 +266,38 @@ regla('electivas-sin-carga-horaria', () => {
     aviso(
       'electivas-sin-carga-horaria',
       `${ref(e)}: el catálogo del Departamento no publica su carga horaria, así que no suma al requisito de ${grafo.plan.requisitoElectivas.total} hs`,
+    );
+  }
+});
+
+regla('asignacion-de-mesas', () => {
+  const claves = ASIGNACIONES.map((a) => a.materia);
+  if (new Set(claves).size !== claves.length) {
+    error('asignacion-de-mesas', 'hay una materia asignada a más de una mesa');
+  }
+
+  for (const a of ASIGNACIONES) {
+    const existe =
+      typeof a.materia === 'number' ? grafo.porId.has(a.materia) : grafo.porSlug.has(a.materia);
+    if (!existe) {
+      error(
+        'asignacion-de-mesas',
+        `la mesa ${a.mesa} asigna "${a.comoFigura}" a ${a.materia}, que no existe en el plan`,
+      );
+    }
+  }
+
+  const interpretadas = ASIGNACIONES.filter((a) => a.confianza === 'interpretada');
+  if (interpretadas.length > 0) {
+    aviso(
+      'asignacion-de-mesas',
+      `${interpretadas.length} de ${ASIGNACIONES.length} asignaciones a mesa son lectura nuestra de nombres del Plan 2008, no transcripción`,
+    );
+  }
+  if (SIN_MESA_PUBLICADA.length > 0) {
+    aviso(
+      'asignacion-de-mesas',
+      `${SIN_MESA_PUBLICADA.length} materias no figuran en ninguna mesa del listado: ${SIN_MESA_PUBLICADA.join(', ')}`,
     );
   }
 });

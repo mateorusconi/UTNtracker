@@ -68,7 +68,7 @@ export function DialogoElectivas() {
     <dialog
       ref={ref}
       onClose={cerrar}
-      className="m-auto flex max-h-[85vh] w-[min(62rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border p-0 backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+      className="m-auto hidden max-h-[85vh] open:flex w-[min(62rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border p-0 backdrop:bg-black/60 backdrop:backdrop-blur-sm"
       style={{
         background: 'var(--popover)',
         borderColor: 'var(--border)',

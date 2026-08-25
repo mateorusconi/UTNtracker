@@ -14,6 +14,7 @@
 
 import type { Materia } from '../data/plan-utn-frt-isi-2023';
 import { HORA_CIERRE_INSCRIPCION, MESAS, type Mesa } from '../data/mesas-2026';
+import { ASIGNACIONES, type AsignacionMesa } from '../data/mesas-materias';
 import { derivar, esDelPlan, tieneFinal, type Grafo } from './grafo';
 import { estadoDe, marcar } from './progreso';
 import type { Progreso } from './tipos';
@@ -119,6 +120,59 @@ export function llamadosPendientes(ahora: Date, mesas: readonly Mesa[] = MESAS):
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// EN QUÉ MESA SE RINDE CADA MATERIA
+// ─────────────────────────────────────────────────────────────────────────────
+
+const POR_MATERIA = new Map<number | string, AsignacionMesa>(
+  ASIGNACIONES.map((a) => [a.materia, a]),
+);
+
+/** Asignación a mesa de una materia, o `null` si el listado no la incluye. */
+export function asignacionDe(materia: Materia): AsignacionMesa | null {
+  const clave = materia.tipo === 'electiva' ? materia.slug : materia.id;
+  return POR_MATERIA.get(clave) ?? null;
+}
+
+export interface Oportunidad {
+  asignacion: AsignacionMesa;
+  mesa: MesaDerivada;
+  /** Días hasta el examen: lo que te queda para estudiar. */
+  diasParaEstudiar: number;
+  /** Días hasta que cierre la inscripción. Negativo si ya cerró. */
+  diasParaAnotarse: number;
+  inscripcionAbierta: boolean;
+}
+
+/**
+ * La primera mesa donde el estudiante puede rendir esa materia.
+ *
+ * Prefiere una con **inscripción abierta**: una mesa a la que ya no te podés
+ * anotar no es una oportunidad, por más que la fecha todavía no haya pasado.
+ * Si no queda ninguna abierta, devuelve la siguiente igual, para que se vea
+ * cuándo vuelve a haber chance.
+ */
+export function proximaOportunidad(
+  materia: Materia,
+  ahora: Date,
+  mesas: readonly Mesa[] = MESAS,
+): Oportunidad | null {
+  const asignacion = asignacionDe(materia);
+  if (asignacion === null) return null;
+
+  const candidatas = mesasPendientes(ahora, mesas).filter((m) => m.mesa === asignacion.mesa);
+  const elegida = candidatas.find((m) => m.estado === 'inscripcion-abierta') ?? candidatas[0];
+  if (elegida === undefined) return null;
+
+  return {
+    asignacion,
+    mesa: elegida,
+    diasParaEstudiar: elegida.diasHastaExamen,
+    diasParaAnotarse: elegida.diasHastaCierre,
+    inscripcionAbierta: elegida.estado === 'inscripcion-abierta',
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // QUÉ FINAL CONVIENE RENDIR
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -134,6 +188,11 @@ export interface FinalPendiente {
   destrabaFinales: Materia[];
   /** `desbloqueaCursadas + destrabaFinales`. Es el criterio de orden. */
   impacto: number;
+  /**
+   * Cuándo y en qué mesa se rinde. `null` si el listado no publica la mesa de
+   * esa materia, o si no se pasó una fecha de referencia.
+   */
+  oportunidad: Oportunidad | null;
 }
 
 /**
@@ -144,7 +203,11 @@ export interface FinalPendiente {
  * viene después. Es la diferencia entre "rendí esto y la semana que viene te
  * anotás a tres materias más" y una promesa que depende de otros cinco finales.
  */
-export function finalesPendientes(progreso: Progreso, grafo: Grafo): FinalPendiente[] {
+export function finalesPendientes(
+  progreso: Progreso,
+  grafo: Grafo,
+  ahora?: Date,
+): FinalPendiente[] {
   const adeudados = grafo.todas.filter(
     (m) => tieneFinal(m) && estadoDe(progreso, m.slug) === 'regular',
   );
@@ -175,6 +238,7 @@ export function finalesPendientes(progreso: Progreso, grafo: Grafo): FinalPendie
       desbloqueaCursadas,
       destrabaFinales,
       impacto: desbloqueaCursadas.length + destrabaFinales.length,
+      oportunidad: ahora === undefined ? null : proximaOportunidad(materia, ahora),
     };
   });
 
@@ -202,8 +266,8 @@ export interface ResumenFinales {
   prioritario: FinalPendiente | null;
 }
 
-export function resumenDeFinales(progreso: Progreso, grafo: Grafo): ResumenFinales {
-  const todos = finalesPendientes(progreso, grafo).filter((f) => esDelPlan(f.materia));
+export function resumenDeFinales(progreso: Progreso, grafo: Grafo, ahora?: Date): ResumenFinales {
+  const todos = finalesPendientes(progreso, grafo, ahora).filter((f) => esDelPlan(f.materia));
   const habilitados = todos.filter((f) => f.puedeRendir);
   const bloqueados = todos.filter((f) => !f.puedeRendir);
   const primero = habilitados[0];

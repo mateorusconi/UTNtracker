@@ -8,7 +8,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { MESAS } from '../src/data/mesas-2026';
+import { ASIGNACIONES, SIN_MESA_PUBLICADA } from '../src/data/mesas-materias';
 import {
+  asignacionDe,
   derivarMesa,
   diasEntre,
   finalesPendientes,
@@ -16,9 +18,10 @@ import {
   mesasPendientes,
   momentoDeCierre,
   parsearFecha,
+  proximaOportunidad,
   resumenDeFinales,
 } from '../src/lib/mesas';
-import { aprobadas, combinar, grafo, regulares, slug } from './ayudas';
+import { aprobadas, combinar, grafo, materia, regulares, slug } from './ayudas';
 
 describe('fechas', () => {
   it('parsea en horario local, no en UTC', () => {
@@ -127,6 +130,64 @@ describe('calendario 2026', () => {
   it('en pleno diciembre el próximo llamado ya es de 2027', () => {
     const llamados = llamadosPendientes(new Date(2026, 11, 20));
     expect(llamados[0]?.llamado).toBe(8);
+  });
+});
+
+describe('en qué mesa se rinde cada materia', () => {
+  it('distingue lo que coincide por nombre de lo que interpretamos', () => {
+    // "Analisis Matematico II" coincide tal cual con el Plan 2023.
+    const exacta = asignacionDe(materia(9));
+    expect(exacta?.mesa).toBe(3);
+    expect(exacta?.confianza).toBe('exacta');
+
+    // "Gestion de Datos" es el nombre del Plan 2008: lo leímos como Bases de Datos.
+    const interpretada = asignacionDe(materia(19));
+    expect(interpretada?.mesa).toBe(1);
+    expect(interpretada?.confianza).toBe('interpretada');
+    expect(interpretada?.comoFigura).toBe('Gestion de Datos');
+  });
+
+  it('devuelve null para las materias que el listado no incluye', () => {
+    for (const id of SIN_MESA_PUBLICADA) {
+      expect(asignacionDe(materia(id))).toBeNull();
+    }
+  });
+
+  it('ninguna materia está en dos mesas', () => {
+    const claves = ASIGNACIONES.map((a) => a.materia);
+    expect(new Set(claves).size).toBe(claves.length);
+  });
+
+  it('toda asignación apunta a una materia que existe en el plan', () => {
+    for (const a of ASIGNACIONES) {
+      const existe =
+        typeof a.materia === 'number'
+          ? grafo.porId.has(a.materia)
+          : grafo.porSlug.has(a.materia);
+      expect(existe, `${a.materia} (${a.comoFigura})`).toBe(true);
+    }
+  });
+
+  it('la próxima oportunidad prefiere una mesa con inscripción abierta', () => {
+    // 1 de septiembre: el 4° llamado está abierto entero.
+    const o = proximaOportunidad(materia(9), new Date(2026, 8, 1));
+
+    expect(o?.mesa.llamado).toBe(4);
+    expect(o?.mesa.mesa).toBe(3); // Análisis Matemático II va en la Mesa 3
+    expect(o?.inscripcionAbierta).toBe(true);
+    expect(o?.diasParaEstudiar).toBe(24); // examen 25/09
+  });
+
+  it('si la inscripción de la mesa ya cerró, salta al llamado siguiente', () => {
+    // 23 de septiembre: la Mesa 3 del 4° llamado cerró el 22.
+    const o = proximaOportunidad(materia(9), new Date(2026, 8, 23, 10));
+
+    expect(o?.mesa.llamado).toBe(5);
+    expect(o?.inscripcionAbierta).toBe(true);
+  });
+
+  it('sin mesa publicada no hay oportunidad que mostrar', () => {
+    expect(proximaOportunidad(materia(20), new Date(2026, 8, 1))).toBeNull();
   });
 });
 
