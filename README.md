@@ -33,6 +33,37 @@ Tres detalles que hacen falta para que Pages sirva un export de Next:
 El avance vive en el `localStorage` de cada navegador: no hay cuentas ni servidor, así que cada
 uno ve solo lo suyo y nada viaja a ningún lado.
 
+**Ojo con esto:** el `localStorage` es por navegador y por origen. Sobrevive a cerrar la pestaña y
+a reiniciar la máquina, pero **no sincroniza entre dispositivos** y se pierde si borrás los datos
+del navegador o entrás en incógnito. Para eso está el respaldo en JSON (abajo).
+
+GitHub Pages sirve todos los repos de una cuenta desde el mismo origen
+(`usuario.github.io`), así que **comparten `localStorage`** con cualquier otro proyecto que
+publiques ahí. Por eso la clave va con prefijo: `utrackern:v1`.
+
+---
+
+## Respaldo del avance (`src/lib/respaldo.ts`)
+
+Dos íconos en el rail: **descargar** el avance como JSON y **cargar** uno guardado. Es lo que
+suple la falta de cuentas: te llevás el archivo a otro dispositivo y lo cargás ahí.
+
+El archivo que entra es **dato ajeno**, no código nuestro: puede estar corrupto, ser de otra app,
+traer slugs de una versión vieja del plan o estados inventados. Por eso `leerRespaldo` nunca tira
+una excepción — valida entrada por entrada y devuelve qué ignoró:
+
+| Entrada | Qué hace |
+|---|---|
+| No es JSON | Error claro, no toca el avance |
+| Slug que no existe en el plan | Lo descarta y lo cuenta como "sin reconocer" |
+| Estado inventado (`promocionada`) | Lo descarta |
+| `nota` o `fecha` con tipo raro | Descarta el campo, conserva la materia |
+| Archivo de otro plan | Avisa, pero importa lo que reconoce |
+| Nada válido | Error, no borra nada |
+
+Importar **pisa** el avance actual, así que sale con `Deshacer` en el toast. También acepta un
+`Progreso` pelado, sin el envoltorio, por si alguien copia y pega solo esa parte.
+
 ---
 
 ## Alcance
@@ -62,7 +93,7 @@ mismas electivas para los dos planes.
 npm run dev         # http://localhost:3000
 npm run build       # export estático a out/
 npm run validar     # valida el dataset contra las ordenanzas (16 reglas)
-npm test            # 98 tests de Vitest
+npm test            # 114 tests de Vitest
 npm run typecheck   # tsc --noEmit, strict, sin any
 npm run check       # typecheck + validar + test
 ```
@@ -91,7 +122,8 @@ UtnFRTracker/
 │   ├── reglas-especiales.test.ts        ✔  PF, PPS, Seminario, electivas
 │   ├── layout.test.ts                   ✔  posiciones determinísticas
 │   ├── seleccion.test.ts                ✔  subgrafo resaltado
-│   └── mesas.test.ts                    ✔  calendario y prioridad de finales
+│   ├── mesas.test.ts                    ✔  calendario y prioridad de finales
+│   └── respaldo.test.ts                 ✔  archivos rotos, ajenos y a medias
 │
 ├── public/
 │   ├── manifest.json                    ·  Fase 5
@@ -110,6 +142,7 @@ UtnFRTracker/
     │   ├── etiquetas.ts                 ✔  la línea meta de la tarjeta
     │   ├── theme.ts                     ✔  ACENTO y los 7 estados visuales
     │   ├── mesas.ts                     ✔  contador de mesas y prioridad de finales
+    │   ├── respaldo.ts                  ✔  exportar e importar el avance en JSON
     │   └── demo.ts                      ✔  andamio: avance falso para ver los 7 estados
     │
     ├── store/
@@ -127,7 +160,7 @@ UtnFRTracker/
         │   └── context-menu.tsx         ✔  wrapper shadcn sobre Radix
         ├── layout/
         │   ├── topbar.tsx               ✔  identidad, capas, ejemplo, información
-        │   ├── rail.tsx                 ✔  rail de 64 px
+        │   ├── rail.tsx                 ✔  rail de 64 px + respaldo
         │   └── info-dialog.tsx          ✔  totales + leyenda de estados
         ├── mapa/
         │   ├── canvas.tsx               ✔  React Flow

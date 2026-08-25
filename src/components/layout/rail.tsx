@@ -16,11 +16,18 @@ import {
   Home,
   Network,
   Search,
+  Upload,
   type LucideIcon,
 } from 'lucide-react';
+import { useRef, type ChangeEvent } from 'react';
+import { toast } from 'sonner';
 
+import { grafoPorDefecto } from '../../lib/grafo';
+import { cantidadMarcadas } from '../../lib/progreso';
+import { crearRespaldo, leerRespaldo, nombreDeArchivo } from '../../lib/respaldo';
 import { cx } from '../../lib/theme';
 import { usarMapa } from '../../store/usar-mapa';
+import { usarProgreso } from '../../store/usar-progreso';
 
 interface ItemRail {
   icono: LucideIcon;
@@ -34,13 +41,88 @@ interface ItemRail {
 export function Rail() {
   const abierto = usarMapa((estado) => estado.railAbierto);
   const panelAbierto = usarMapa((estado) => estado.panelAbierto);
+  const inputArchivo = useRef<HTMLInputElement>(null);
+
+  /**
+   * Baja el avance como JSON. No hay servidor, así que el archivo se arma en
+   * memoria y se descarga desde un blob: nada sale del navegador.
+   */
+  const descargar = (): void => {
+    const progreso = usarProgreso.getState().progreso;
+    const cantidad = cantidadMarcadas(progreso);
+
+    if (cantidad === 0) {
+      toast('No hay nada para exportar', {
+        description: 'Marcá al menos una materia antes de descargar tu avance.',
+      });
+      return;
+    }
+
+    const ahora = new Date();
+    const respaldo = crearRespaldo(progreso, grafoPorDefecto(), ahora);
+    const nombre = nombreDeArchivo(ahora);
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(respaldo, null, 2)], { type: 'application/json' }),
+    );
+
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = nombre;
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    URL.revokeObjectURL(url);
+
+    toast('Avance descargado', {
+      description: `${cantidad} ${cantidad === 1 ? 'materia' : 'materias'} en ${nombre}.`,
+    });
+  };
+
+  /** Importa un respaldo. Pisa el avance actual, siempre con deshacer. */
+  const alElegirArchivo = async (evento: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const archivo = evento.target.files?.[0];
+    // Se limpia para que elegir el mismo archivo dos veces vuelva a disparar.
+    evento.target.value = '';
+    if (archivo === undefined) return;
+
+    const resultado = leerRespaldo(await archivo.text(), grafoPorDefecto());
+
+    if (!resultado.ok) {
+      toast.error('No pude importar el archivo', { description: resultado.error });
+      return;
+    }
+
+    const anterior = usarProgreso.getState().progreso;
+    usarProgreso.getState().reemplazar(resultado.progreso);
+
+    const detalles = [
+      `${resultado.importadas} ${resultado.importadas === 1 ? 'materia' : 'materias'}`,
+    ];
+    if (resultado.ignoradas.length > 0) {
+      detalles.push(`${resultado.ignoradas.length} sin reconocer`);
+    }
+    if (resultado.aviso !== null) detalles.push(resultado.aviso);
+
+    toast('Avance importado', {
+      description: detalles.join(' · '),
+      action: {
+        label: 'Deshacer',
+        onClick: () => usarProgreso.getState().reemplazar(anterior),
+      },
+    });
+  };
 
   if (!abierto) return null;
 
   const grupos: readonly (readonly ItemRail[])[] = [
     [
       { icono: Home, etiqueta: 'Inicio', onClick: () => usarMapa.getState().seleccionar(null) },
-      { icono: Download, etiqueta: 'Exportar progreso', fase: 4 },
+      { icono: Download, etiqueta: 'Descargar mi avance', onClick: descargar },
+      {
+        icono: Upload,
+        etiqueta: 'Cargar un avance guardado',
+        onClick: () => inputArchivo.current?.click(),
+      },
     ],
     [
       { icono: Search, etiqueta: 'Buscar materia', fase: 4 },
@@ -65,6 +147,14 @@ export function Rail() {
       style={{ background: 'var(--barra)', borderColor: 'var(--border)' }}
       aria-label="Navegación principal"
     >
+      <input
+        ref={inputArchivo}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={(e) => void alElegirArchivo(e)}
+      />
+
       {grupos.map((grupo, i) => (
         <div
           key={i}
