@@ -38,11 +38,27 @@ export function PanelSeleccion({ slug }: { slug: string }) {
 
   const requisitos = useMemo(() => requisitosDirectos(slug, grafo), [slug, grafo]);
 
-  // Las electivas no están en el mapa (su vista llega en la Fase 4), así que no
-  // se listan como clickeables: solo se cuentan aparte.
-  const hijas = useMemo(() => desbloqueaDirectamente(slug, grafo), [slug, grafo]);
-  const hijasEnMapa = hijas.filter((a) => esDelPlan(materiaDe(grafo, a.hasta)));
-  const hijasElectivas = hijas.length - hijasEnMapa.length;
+  // Dos preguntas distintas: a quién le habilito la CURSADA y a quién le
+  // habilito el FINAL. Antes se mezclaban en una sola lista y no se entendía
+  // qué ganabas aprobando el final además de tener la cursada.
+  const hijasCursar = useMemo(() => desbloqueaDirectamente(slug, grafo, ['cursar']), [slug, grafo]);
+  const hijasRendir = useMemo(() => desbloqueaDirectamente(slug, grafo, ['rendir']), [slug, grafo]);
+
+  // Las electivas no están en el mapa: se cuentan aparte en vez de ofrecer un
+  // clic que no lleva a ningún lado.
+  const enMapa = (aristas: typeof hijasCursar) =>
+    aristas.filter((a) => esDelPlan(materiaDe(grafo, a.hasta)));
+  const cursarEnMapa = enMapa(hijasCursar);
+  const rendirEnMapa = enMapa(hijasRendir);
+  const hijasElectivas = hijasCursar.length - cursarEnMapa.length;
+
+  /**
+   * ¿El estado ACTUAL de esta materia ya le cumple ese requisito a la otra?
+   * Es la información útil: si está `regular`, le cumple a las que piden la
+   * cursada pero no a las que piden el final — y ahí se ve qué ganás rindiendo.
+   */
+  const cumpleRequisito = (exigencia: 'regularizada' | 'aprobada'): boolean =>
+    exigencia === 'aprobada' ? estaAprobada(progreso, slug) : estaRegularizada(progreso, slug);
 
   const enCadena = useMemo(
     () => desbloqueaEnCadena(slug, progreso, grafo).filter((s) => esDelPlan(materiaDe(grafo, s))),
@@ -114,7 +130,7 @@ export function PanelSeleccion({ slug }: { slug: string }) {
         </div>
       )}
 
-      <Seccion titulo="Requisitos directos" cantidad={requisitos.length} abiertaPorDefecto>
+      <Seccion titulo="Requisitos para cursarla" cantidad={requisitos.length} abiertaPorDefecto>
         {requisitos.length === 0 ? (
           <p className="px-1 py-1.5 text-xs text-zinc-500 dark:text-zinc-400">Sin requisitos</p>
         ) : (
@@ -157,24 +173,23 @@ export function PanelSeleccion({ slug }: { slug: string }) {
         </Seccion>
       )}
 
-      <Seccion titulo="Desbloquea directamente" cantidad={hijasEnMapa.length}>
-        {hijasEnMapa.length === 0 ? (
+      <Seccion titulo="Le habilita la cursada a" cantidad={cursarEnMapa.length}>
+        {cursarEnMapa.length === 0 ? (
           <p className="px-1 py-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-            No es correlativa de ninguna materia del plan
+            No es correlativa de cursada de ninguna materia del plan
           </p>
         ) : (
           <ul>
-            {hijasEnMapa.map((arista) => {
+            {cursarEnMapa.map((arista) => {
               const hija = materiaDe(grafo, arista.hasta);
-              const derivadaHija = derivar(hija, progreso, grafo);
               return (
                 <FilaMateria
                   key={arista.id}
                   slug={hija.slug}
                   numero={numeroVisible(hija)}
                   nombre={hija.nombre}
-                  detalle={derivadaHija.habilitacion === 'bloqueada' ? 'bloqueada' : 'disponible'}
-                  cumple={derivadaHija.habilitacion !== 'bloqueada'}
+                  detalle={arista.exigencia === 'aprobada' ? 'con el final' : 'con la cursada'}
+                  cumple={cumpleRequisito(arista.exigencia)}
                 />
               );
             })}
@@ -182,9 +197,32 @@ export function PanelSeleccion({ slug }: { slug: string }) {
         )}
         {hijasElectivas > 0 && (
           <p className="px-1 pt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-            + {hijasElectivas} {hijasElectivas === 1 ? 'electiva' : 'electivas'} (catálogo en la
-            Fase 4)
+            + {hijasElectivas} {hijasElectivas === 1 ? 'electiva' : 'electivas'} (mirá el catálogo)
           </p>
+        )}
+      </Seccion>
+
+      <Seccion titulo="Le habilita el final a" cantidad={rendirEnMapa.length}>
+        {rendirEnMapa.length === 0 ? (
+          <p className="px-1 py-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+            Ningún final depende de esta materia
+          </p>
+        ) : (
+          <ul>
+            {rendirEnMapa.map((arista) => {
+              const hija = materiaDe(grafo, arista.hasta);
+              return (
+                <FilaMateria
+                  key={arista.id}
+                  slug={hija.slug}
+                  numero={numeroVisible(hija)}
+                  nombre={hija.nombre}
+                  detalle="con el final"
+                  cumple={cumpleRequisito('aprobada')}
+                />
+              );
+            })}
+          </ul>
         )}
       </Seccion>
 

@@ -1,0 +1,60 @@
+name: Deploy
+
+# Publica el export estático en GitHub Pages en cada push a main.
+# El sitio queda en https://mateorusconi.github.io/UTNtracker/
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Permisos mínimos: leer el repo y publicar en Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un deploy por vez. Si se pushea de nuevo mientras corre, se cancela el viejo.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # No publicamos nada que no pase el validador del plan y los tests: un
+      # dato académico mal cargado es peor que la página caída.
+      - name: Validar dataset, tipos y tests
+        run: npm run check
+
+      - name: Build estático
+        run: npm run build
+        env:
+          PAGES_BASE_PATH: /UTNtracker
+
+      # Sin esto Jekyll ignora la carpeta `_next/` y el sitio queda sin estilos.
+      - run: touch out/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
