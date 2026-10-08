@@ -14,6 +14,7 @@
 
 import PLAN, { type Materia } from '../src/data/plan-utn-frt-isi-2023';
 import { ASIGNACIONES, SIN_MESA_PUBLICADA } from '../src/data/mesas-materias';
+import { MESAS } from '../src/data/mesas-2026';
 import {
   ASIGNATURAS_OBLIGATORIAS_ESPERADAS,
   HORAS_OBLIGATORIAS_ESPERADAS,
@@ -298,6 +299,19 @@ regla('asignacion-de-mesas', () => {
     aviso(
       'asignacion-de-mesas',
       `${SIN_MESA_PUBLICADA.length} materias no figuran en ninguna mesa del listado: ${SIN_MESA_PUBLICADA.join(', ')}`,
+    );
+  }
+});
+
+regla('minimo-de-llamados', () => {
+  // Ord. CS N° 1549, art. 6.1.2: la facultad tiene que ofrecer al menos 10
+  // llamados a final por ciclo lectivo. Si el calendario que cargamos trae
+  // menos, nos comimos una página al transcribirlo.
+  const llamados = new Set(MESAS.map((m) => m.llamado)).size;
+  if (llamados < 10) {
+    error(
+      'minimo-de-llamados',
+      `el calendario tiene ${llamados} llamados y la Ord. 1549 (art. 6.1.2) exige un mínimo de 10`,
     );
   }
 });

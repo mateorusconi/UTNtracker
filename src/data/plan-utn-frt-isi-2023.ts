@@ -302,8 +302,8 @@ export const ELECTIVAS: Materia[] = [
 
   // ── Res. 2386/2025 — 2ª parte ─────────────────────────────────────────────
   el('el-auditoria', 'Auditoría en Sistemas de Información', 4, 'cuatrimestral-1', 4, 64,
-     'Gestión Ingenieril', 'Tecnologías Aplicadas', [23], [8, 16], [8, 16],
-     { requiereVerificacion: true, notas: 'CONFLICTO DE FUENTES: el OCR de la Res. 2386 exige 8 y 16 aprobadas; la tabla del Departamento deja esa columna vacía y solo pide Diseño de SI (23) regularizada. Mantenemos el criterio más exigente —quitar un requisito habilita una inscripción que puede rebotar— hasta confirmarlo en Departamento.' }),
+     'Gestión Ingenieril', 'Tecnologías Aplicadas', [23], [], [23],
+     { notas: 'Conflicto resuelto: el OCR de la Res. 2386 le ponía 8 y 16 aprobadas, pero la estructura curricular de la Ord. 1877 y la tabla del Departamento coinciden en que la columna de aprobadas va vacía. Solo pide Diseño de SI (23) regularizada.' }),
 
   el('el-innovacion', 'Innovación y Gestión de la Tecnología', 5, 'cuatrimestral-1', 6, 96,
      'Gestión Ingenieril', 'Ciencias y Tecnologías Complementarias', [30], [], [30]),
@@ -343,8 +343,7 @@ export const ELECTIVAS: Materia[] = [
     nivel: 3, regimen: 'cuatrimestral-1', horasSemanales: 4, horasTotales: 64,
     tipo: 'electiva',
     correlativas: { paraCursar: { regularizadas: [], aprobadas: [] }, paraRendir: { aprobadas: [] } },
-    requiereVerificacion: true,
-    notas: 'Carga horaria (4 hs semanales, 1° cuatrimestre) aportada por el usuario: la tabla del Departamento deja esa celda vacía y el PDF de la Res. 2386 es un escaneo de imágenes. Las correlativas siguen sin fuente.',
+    notas: 'La estructura curricular de la Ord. 1877 confirma 4 hs semanales y 64 totales, y deja las dos columnas de correlativas vacías: no tiene. El cuatrimestre de dictado no figura en esa tabla.',
   },
   {
     id: 0, slug: 'el-prog-distribuidas', nombre: 'Programación de Aplicaciones Distribuidas',
@@ -352,7 +351,7 @@ export const ELECTIVAS: Materia[] = [
     tipo: 'electiva',
     correlativas: { paraCursar: { regularizadas: [], aprobadas: [] }, paraRendir: { aprobadas: [] } },
     requiereVerificacion: true,
-    notas: 'La tabla del Departamento la lista sin correlativas y sin carga horaria. Con 0 hs no suma al requisito de 96/144/240: confirmá el dato antes de contarla para recibirte.',
+    notas: 'Aparece en el listado del Departamento sin correlativas ni carga horaria, y NO figura en la estructura curricular de la Ord. 1877, que sí lista las otras 18. Con 0 hs no suma al requisito de 96/144/240: confirmá en Departamento si sigue vigente antes de contarla.',
   },
   {
     id: 0, slug: 'el-sig', nombre: 'Sistemas de Información Geográficos',
@@ -369,8 +368,7 @@ export const ELECTIVAS: Materia[] = [
       paraRendir: { aprobadas: [9, 11, 12, 13, 14, 15, 16, 19, 23] },
     },
     reglaEspecial: 'TODAS_LAS_DE_NIVEL_2_EXCEPTO_FISICA_II_APROBADAS_PARA_CURSAR',
-    requiereVerificacion: true,
-    notas: 'Dos interpretaciones nuestras: «Gestión de Datos» se leyó como Bases de Datos (19), y «Todas las Materias del 2° Nivel Excepto Física 2» se expandió a 9-11-12-13-14-15-16. Confirmar en Departamento.',
+    notas: 'Las dos interpretaciones quedaron confirmadas por la estructura curricular de la Ord. 1877, que escribe esta fila como «23-19» y «2° año - Física II»: el «Gestión de Datos» del listado viejo es Bases de Datos (19), y la regla se expande a 9-11-12-13-14-15-16.',
   },
   {
     id: 0, slug: 'el-heuristicas', nombre: 'Heurísticas y Auto Machine Learning',

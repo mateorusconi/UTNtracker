@@ -190,14 +190,16 @@ describe('electivas', () => {
     );
   });
 
-  it('lo que sigue en conflicto entre fuentes queda marcado, no resuelto a ojo', () => {
-    // La Res. 2386 exige 8 y 16 aprobadas; la tabla del Departamento deja esa
-    // columna vacía. Mantenemos el criterio más exigente y lo señalamos.
+  it('Auditoría: el conflicto entre fuentes quedó resuelto a favor de la estructura curricular', () => {
+    // El OCR de la Res. 2386 le ponía 8 y 16 aprobadas. La estructura curricular
+    // de la Ord. 1877 y el listado del Departamento coinciden en dejar esa
+    // columna vacía: dos fuentes contra una lectura dudosa de un escaneo.
     const auditoria = grafo.porSlug.get('el-auditoria');
 
-    expect(auditoria?.requiereVerificacion).toBe(true);
-    expect(auditoria?.correlativas.paraCursar.aprobadas).toEqual([8, 16]);
-    expect(derivadaPorSlug('el-auditoria', regulares(23)).habilitacion).toBe('bloqueada');
+    expect(auditoria?.requiereVerificacion).toBeUndefined();
+    expect(auditoria?.correlativas.paraCursar.aprobadas).toEqual([]);
+    // Con solo Diseño de SI regularizada ya se puede cursar.
+    expect(derivadaPorSlug('el-auditoria', regulares(23)).habilitacion).toBe('disponible');
   });
 
   it('la que sigue sin carga horaria publicada entra, pero con 0 hs', () => {
@@ -216,15 +218,20 @@ describe('electivas', () => {
     expect(resumen.porNivel[4].aprobadas).toBe(0);
   });
 
-  it('Gestión de Procesos de Negocio queda marcada aunque tenga horas', () => {
-    // La carga horaria la aportó el usuario, no la tabla: 4 hs, 1° cuatrimestre.
-    // Las correlativas siguen sin fuente, así que la bandera se mantiene.
+  it('Gestión de Procesos de Negocio: 64 hs y sin correlativas, confirmado', () => {
+    // La estructura curricular de la Ord. 1877 le da 4 hs semanales y 64 totales,
+    // y deja las dos columnas de correlativas vacías. No es que falte el dato:
+    // la materia no tiene correlativas.
     const gestion = grafo.porSlug.get('el-gestion-procesos');
 
+    expect(gestion?.horasSemanales).toBe(4);
     expect(gestion?.horasTotales).toBe(64);
-    expect(gestion?.regimen).toBe('cuatrimestral-1');
-    expect(gestion?.requiereVerificacion).toBe(true);
+    expect(gestion?.requiereVerificacion).toBeUndefined();
     expect(gestion?.correlativas.paraCursar.regularizadas).toEqual([]);
+    expect(gestion?.correlativas.paraCursar.aprobadas).toEqual([]);
+
+    // Sin correlativas, está disponible desde el día uno. Es correcto.
+    expect(derivadaPorSlug('el-gestion-procesos', {}).habilitacion).toBe('disponible');
   });
 
   it('Sistemas de Información Geográficos traduce el Plan 2008 y expande la regla', () => {
@@ -235,8 +242,9 @@ describe('electivas', () => {
     // «Todas las Materias del 2° Nivel Excepto Física 2» → sin el 10.
     expect(sig?.correlativas.paraCursar.aprobadas).toEqual([9, 11, 12, 13, 14, 15, 16]);
     expect(sig?.correlativas.paraCursar.aprobadas).not.toContain(10);
-    // Son interpretaciones nuestras, no transcripción: queda marcada.
-    expect(sig?.requiereVerificacion).toBe(true);
+    // La estructura curricular escribe esta fila como «23-19» y «2° año - Física
+    // II», así que las dos lecturas quedaron confirmadas.
+    expect(sig?.requiereVerificacion).toBeUndefined();
   });
 
   it('las electivas nuevas traen las correlativas de la tabla del Departamento', () => {
